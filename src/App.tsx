@@ -1,21 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 
-import './App.css';
-import { ChainInfo } from "@keplr-wallet/types";
-import { SigningStargateClient } from "@cosmjs/stargate";
-import { Window as KeplrWindow } from "@keplr-wallet/types";
-import { MsgSendEncodeObject } from "@cosmjs/stargate/build/modules";
-
+import "./App.css";
+import { ChainInfo, Window as KeplrWindow } from "@keplr-wallet/types";
+import { MsgUndelegateEncodeObject, SigningStargateClient } from "@cosmjs/stargate";
 
 declare global {
   interface Window extends KeplrWindow {}
 }
 
-
 const App = () => {
-  const [term, setTerm] = useState('');
+  const [myAddress, setMyAddress] = useState('');
+  const [validatorAddress, setValidatorAddress] = useState('');
+  const [amount, setAmount] = useState('');
 
-  const submitForm = (event: React.FormEvent<HTMLFormElement>) => {
+  const undelegate = (event: React.FormEvent<HTMLFormElement>) => {
     // Preventing the page from reloading
     event.preventDefault();
 
@@ -23,25 +21,25 @@ const App = () => {
       async () => {
         const { keplr } = window;
         if (!keplr) {
-          alert("you need to install Keplr");
-          throw new Error("you need to install Keplr");
+          alert("You need to install Keplr");
+          throw new Error("You need to install Keplr");
         }
 
         await keplr.experimentalSuggestChain(chainInfo());
-        const offlineSigner = keplr.getOfflineSigner(chainId);
-        const address = (await offlineSigner.getAccounts())[0].address;
 
-        const client = await SigningStargateClient.connectWithSigner(chainRpcEndpoint, offlineSigner);
+        const offlineSigner = keplr.getOfflineSignerOnlyAmino(chainId);
+        const accounts = await offlineSigner.getAccounts();
+        const address = accounts[0].address;
 
-        const msg: MsgSendEncodeObject = {
-          typeUrl: "/cosmos.bank.v1beta1.MsgSend",
+        const msg: MsgUndelegateEncodeObject = {
+          typeUrl: "/cosmos.staking.v1beta1.MsgUndelegate",
           value: {
-            fromAddress: address,
-            toAddress: address,
-            amount: [{
+            delegatorAddress: address,
+            validatorAddress: validatorAddress,
+            amount: {
               denom: "umed",
-              amount: "1",
-            }],
+              amount: amount,
+            },
           },
         };
 
@@ -55,46 +53,88 @@ const App = () => {
           gas: "200000",
         };
 
+        const client = await SigningStargateClient.connectWithSigner(chainRpcEndpoint, offlineSigner);
         const resp = await client.signAndBroadcast(address, [msg], fee);
         alert(`code:${resp.code}, hash:${resp.transactionHash}`);
       }
     )();
   }
 
+  const connectWallet = () => {
+    (
+      async() => {
+        const { keplr } = window;
+        if (!keplr) {
+          alert("you need to install Keplr");
+          throw new Error("you need to install Keplr");
+        }
+
+        await keplr.experimentalSuggestChain(chainInfo());
+
+        const offlineSigner = keplr.getOfflineSignerOnlyAmino(chainId);
+        const accounts = await offlineSigner.getAccounts();
+        const address = accounts[0].address;
+        setMyAddress(address);
+      }
+    )();
+  };
+
   return (
     <div className="container">
-      <form onSubmit={submitForm}>
-        <input
-          value={term}
-          onChange={(e) => setTerm(e.target.value)}
-          type="text"
-          placeholder="Enter a term"
-          className="input"
-        />
-        <button type="submit" className="btn">Submit</button>
+      <h1>A temporary MediBloc wallet for Cosmos Ledger users</h1>
+      <label className="elem">MyAddress: {myAddress}</label>
+      <div className="btnDiv">
+        <button onClick={connectWallet} className="btn">Connect wallet</button>
+      </div>
+      <form onSubmit={undelegate} className="form">
+        <div className="formElem">
+          <label>ValidatorAddress: </label>
+          <input
+            value={validatorAddress}
+            onChange={(e) => setValidatorAddress(e.target.value)}
+            type="text"
+            placeholder="Enter a validator address to undelegate"
+            className="input"
+          />
+        </div>
+        <div className="formElem">
+          <label>Amount: </label>
+          <input
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            type="text"
+            placeholder="Enter an amount to undelegate (in uMED)"
+            className="input"
+          />
+        </div>
+        <div className="btnDiv">
+          <button type="submit" className="btn">Undelegate</button>
+        </div>
       </form>
     </div>
   );
 };
 
-export const chainId = "hygieia-8";
-export const chainRpcEndpoint = "https://testnet-rpc.gopanacea.org:443";
+export const chainId = "panacea-3";
+export const chainName = "MediBloc-Cosmos"
+export const chainRpcEndpoint = "https://rpc.gopanacea.org:443";
+export const chainRestEndpoint = "https://api.gopanacea.org:443";
 
 export const chainInfo = (): ChainInfo => ({
   chainId: chainId,
-  chainName: chainId,
+  chainName: chainName,
   rpc: chainRpcEndpoint,
-  rest: "https://testnet-api.gopanacea.org",
+  rest: chainRestEndpoint,
   bip44: {
-    coinType: 371,
+    coinType: 118,
   },
   bech32Config: {
     bech32PrefixAccAddr: "panacea",
-    bech32PrefixAccPub: "panacea" + "pub",
-    bech32PrefixValAddr: "panacea" + "valoper",
-    bech32PrefixValPub: "panacea" + "valoperpub",
-    bech32PrefixConsAddr: "panacea" + "valcons",
-    bech32PrefixConsPub: "panacea" + "valconspub",
+    bech32PrefixAccPub: "panaceapub",
+    bech32PrefixValAddr: "panaceavaloper",
+    bech32PrefixValPub: "panaceavaloperpub",
+    bech32PrefixConsAddr: "panaceavalcons",
+    bech32PrefixConsPub: "panaceavalconspub",
   },
   currencies: [
     {
@@ -123,7 +163,6 @@ export const chainInfo = (): ChainInfo => ({
     coinDecimals: 6,
     coinGeckoId: "medibloc",
   },
-  coinType: 371,
   features: ["stargate", "ibc-transfer", "ibc-go"],
 });
 

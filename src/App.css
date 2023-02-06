@@ -1,16 +1,34 @@
 .container {
   margin: auto;
   padding-top: 30px;
-  width: 330px;
+  width: 500px;
+}
+
+.elem {
+  padding-top: 20px;
+  width: 500px;
+}
+
+.form {
+  padding-top: 30px;
+  width: 500px;
+}
+
+.formElem {
+  padding-top: 10px;
+  width: 500px;
 }
 
 .input {
-  margin-bottom: 30px;
   padding: 5px 15px;
   width: 300px;
 }
 
+.btnDiv {
+  padding-top: 10px;
+}
+
 .btn {
-  padding: 5px 10px;
+  padding: 5px 5px;
   cursor: pointer;
 }
