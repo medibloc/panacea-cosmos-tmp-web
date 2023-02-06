@@ -1,6 +1,6 @@
 {
-  "name": "celecoxib",
-  "version": "0.1.0",
+  "name": "medibloc-cosmos-web",
+  "version": "0.0.1",
   "private": true,
   "dependencies": {
     "@cosmjs/proto-signing": "^0.29.5",
