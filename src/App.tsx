@@ -38,7 +38,7 @@ const App = () => {
             validatorAddress: validatorAddress,
             amount: {
               denom: "umed",
-              amount: amount,
+              amount: (Number(amount) * 1000000).toString(),
             },
           },
         };
@@ -103,7 +103,7 @@ const App = () => {
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
             type="text"
-            placeholder="Enter an amount to undelegate (in uMED)"
+            placeholder="Enter an amount to undelegate (in MED)"
             className="input"
           />
         </div>
